@@ -20,6 +20,7 @@
           v-model="searchQuery"
         />
       </v-card-text>
+      <p v-if="showFeedback">{{ errorFeedback }}</p>
       <v-card-actions class="container__card__actions">
         <v-btn
           color="#238636"
@@ -34,19 +35,32 @@
 </template>
 
 <script>
-import { mapGetters } from "vuex";
-
 export default {
   data: () => ({
     searchQuery: "",
+    errorFeedback: "Por favor, insira um usuário.",
+    showFeedback: false,
   }),
-  computed: {
-    ...mapGetters(["getRepositories"]),
-  },
   methods: {
     async searchRepositories() {
-      await this.$store.dispatch("setRepositories", this.searchQuery);
-      this.$router.push({ name: "Dashboard" });
+      if (this.searchQuery === "") {
+        this.showFeedback = true;
+        return;
+      }
+      this.showFeedback = false;
+      try {
+        await this.$store.dispatch("setRepositories", this.searchQuery);
+        this.$router.push({
+          name: "Dashboard",
+          params: { userName: this.searchQuery },
+        });
+      } catch (error) {
+        console.log(error);
+        this.$store.dispatch("setSnackbar", {
+          status: true,
+          message: `Erro ao buscar repositórios starred do usuário ${this.searchQuery}.`,
+        });
+      }
     },
   },
 };
@@ -60,6 +74,10 @@ export default {
   justify-content: center;
   height: 100%;
   &__card {
+    p {
+      text-align: center;
+      color: rgb(163, 69, 69);
+    }
     &__title {
       color: white;
       font-size: 30px;
